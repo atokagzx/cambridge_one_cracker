@@ -3,10 +3,12 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException
+import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 import re
 import config
 import requests
+import json
 
 class cambridge():
     def __init__(self) -> None:
@@ -22,7 +24,7 @@ class cambridge():
         self.waitLoad()
         
         
-    def find_data_js(self):
+    def find_data_js(self) -> str:
         input("waiting you...")
         self.waitLoad()
         main = self.d.page_source
@@ -38,18 +40,26 @@ class cambridge():
         '''
         self.d.switch_to.default_content()
         urls = re.findall(r'(https?://\S+)', frame) # here are player.js, player.css and etc
-        data_url = [u for u in urls if "data.js" in u][0].rstrip('></script><script')[:-1]
-        print("data.js url:", data_url)
-        with open('data.js', 'w') as f:
-            f.write(self.read_data_js(data_url))
+        self.data_url = [u for u in urls if "data.js" in u][0].rstrip('></script><script')[:-1]
+        return self.data_url
+        
 
-    def read_data_js(self, link) -> str:
+    def read_data_js(self, link = None) -> str:
         try:
-            return requests.get(link).text
+            if link is None:
+                link = self.data_url
+            js_str = requests.get(link).text
+            self.json_str = js_str[js_str.find("{") : js_str.rfind("}") + 1]
+            return self.json_str
         except:
             return ""
-
-
+    def get_xml_queue(self, json_str = None) -> list:
+        if json_str is None:
+            json_str = self.json_str
+        a = []
+        for i in ET.fromstring(json.loads(json_str)['LearningObjectInfo.xml']).findall("screens/screen/name"):
+            a.append(i.text)
+        return a
     def terminate(self) -> None:
         self.d.close()
 
@@ -64,7 +74,9 @@ if __name__ == "__main__":
     while True:
         try:
             c.find_data_js()
-            pass
+            with open('data.js', 'w') as f:
+                f.write(c.read_data_js())
+            print(c.get_xml_queue())
         except KeyboardInterrupt:
             c.terminate()
             break
