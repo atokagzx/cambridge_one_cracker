@@ -1,9 +1,11 @@
+from enum import unique
 from selenium import webdriver
+from selenium.webdriver.common import keys
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
@@ -25,7 +27,6 @@ class cambridge():
         self.d.find_element(By.XPATH, "/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[2]/div[1]/input").click()
         self.waitLoad()
         
-        
     def find_data_js(self) -> str:
         input("waiting you...")
         self.waitLoad()
@@ -44,24 +45,26 @@ class cambridge():
         urls = re.findall(r'(https?://\S+)', frame) # here are player.js, player.css and etc
         self.data_url = [u for u in urls if "data.js" in u][0].rstrip('></script><script')[:-1]
         return self.data_url
-        
 
-    def read_data_js(self, link = None) -> str:
+    def read_data_js(self, link = None) -> dict:
         try:
             if link is None:
                 link = self.data_url
             js_str = requests.get(link).text
-            self.json_str = js_str[js_str.find("{") : js_str.rfind("}") + 1]
-            return self.json_str
+            json_str = js_str[js_str.find("{") : js_str.rfind("}") + 1]
+            self.data_dict = json.loads(json_str)
+            return self.data_dict
         except:
             return ""
-    def get_xml_queue(self, json_str = None) -> list:
-        if json_str is None:
-            json_str = self.json_str
-        a = []
-        for i in ET.fromstring(json.loads(json_str)['LearningObjectInfo.xml']).findall("screens/screen/name"):
-            a.append(i.text)
-        return a
+
+    def get_xml_queue(self, json_dict = None) -> list:
+        if json_dict is None:
+            json_dict = self.data_dict
+        self.xml_queue = []
+        for i in ET.fromstring(json_dict['LearningObjectInfo.xml']).findall("screens/screen/name"):
+            self.xml_queue.append(i.text)
+        return self.xml_queue
+
     def terminate(self) -> None:
         self.d.close()
 
@@ -73,12 +76,19 @@ class cambridge():
 
 if __name__ == "__main__":
     c = cambridge()
+    c.data_dict = json.load(open("data.json"))
+    xml_queue = c.get_xml_queue()
+    for i in xml_queue: 
+        print(i, ET.fromstring(c.data_dict[i]).tag)
+    exit()
     while True:
         try:
             c.find_data_js()
-            with open('data.js', 'w') as f:
-                f.write(c.read_data_js())
-            print(c.get_xml_queue())
+            with open('data.json', 'w') as f:
+                json.dump(c.read_data_js(), f)
+            xml_queue = c.get_xml_queue()
+            for i in xml_queue:
+                print(i, ET.fromstring(c.data_dict[i]))
         except KeyboardInterrupt:
             c.terminate()
             break
