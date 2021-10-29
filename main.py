@@ -1,7 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
@@ -12,15 +14,15 @@ import json
 
 class cambridge():
     def __init__(self) -> None:
-        self.driver = webdriver.Chrome(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service = Service(ChromeDriverManager().install()))
         self.d = self.driver
         self.d.get("https://www.cambridgeone.org/login?rurl=%2Fdashboard%2Flearner%2Fdashboard")
         self.waitLoad()
-        login_field = self.d.find_element_by_xpath("/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[1]/div[2]/input")
-        pass_field = self.d.find_element_by_xpath("/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[1]/div[3]/input")
+        login_field = self.d.find_element(By.XPATH, "/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[1]/div[2]/input")
+        pass_field = self.d.find_element(By.XPATH, "/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[1]/div[3]/input")
         login_field.send_keys(config.login)
         pass_field.send_keys(config.password)
-        self.d.find_element_by_xpath("/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[2]/div[1]/input").click()
+        self.d.find_element(By.XPATH, "/html/body/div[3]/div[2]/div/div[1]/div/div[2]/main/div[2]/div/div[1]/div[1]/div/div/div/div/div[2]/div/form/div[2]/div[1]/input").click()
         self.waitLoad()
         
         
@@ -32,7 +34,7 @@ class cambridge():
         with open('main.html', 'w') as f:
             f.write(self.d.page_source)
         '''
-        self.d.switch_to.frame(self.d.find_element_by_xpath("/html/body/app/div[2]/learner/product-view/div/div/main/div/lo-renderer/div[2]/div/activity-launch/div[1]/div/iframe"))
+        self.d.switch_to.frame(self.d.find_element(By.XPATH, "/html/body/app/div[2]/learner/product-view/div/div/main/div/lo-renderer/div[2]/div/activity-launch/div[1]/div/iframe"))
         frame = self.d.page_source
         '''
         with open('frame.html', 'w') as f:
